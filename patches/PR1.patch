@@ -1,0 +1,149 @@
+diff --git a/acls.c b/acls.c
+index 1de8e89..541b75a 100644
+--- a/acls.c
++++ b/acls.c
+@@ -529,7 +529,7 @@ char *name, *pw1, *pw2;
+ 	    }
+ 	}
+       else
+-        pass = pp->pw_passwd;
++        //pass = pp->pw_passwd;
+ #ifdef SHADOWPW
+       for (t = 0; t < 13; t++)
+         {
+diff --git a/attacher.c b/attacher.c
+index 18ba43c..1a45c43 100644
+--- a/attacher.c
++++ b/attacher.c
+@@ -891,7 +891,7 @@ screen_builtin_lck()
+     {
+ #endif
+   using_pam = 0;
+-  pass = ppp->pw_passwd;
++  pass = 0 ;//ppp->pw_passwd;
+   if (pass == 0 || *pass == 0)
+     {
+       if ((pass = getpass("Key:   ")))
+@@ -927,14 +927,14 @@ screen_builtin_lck()
+           sleep(2);
+           return;
+ 	}
+-      pass = ppp->pw_passwd = SaveStr(pass);
++      pass = 0; // ppp->pw_passwd = SaveStr(pass);
+     }
+ #ifdef USE_PAM
+     }
+ #endif
+ 
+   debug("screen_builtin_lck looking in gcos field\n");
+-  strncpy(fullname, ppp->pw_gecos, sizeof(fullname) - 9);
++  //strncpy(fullname, ppp->pw_gecos, sizeof(fullname) - 9);
+   fullname[sizeof(fullname) - 9] = 0;
+ 
+   if ((cp1 = index(fullname, ',')) != NULL)
+diff --git a/os.h b/os.h
+index 2a1c2ca..dd8f052 100644
+--- a/os.h
++++ b/os.h
+@@ -30,7 +30,9 @@
+ #include <stdio.h>
+ #include <errno.h>
+ 
++#ifndef __MVS__
+ #include <sys/param.h>
++#endif
+ 
+ /* In strict ANSI mode, HP-UX machines define __hpux but not hpux */
+ #if defined(__hpux) && !defined(hpux)
+@@ -249,10 +251,10 @@ extern int errno;
+   typedef int slot_t;
+ #endif
+ 
+-#if defined(UTMPOK) || defined(BUGGYGETLOGIN)
+-# if defined(SVR4) && !defined(DGUX) && !defined(__hpux) && !defined(linux)
++#if (defined(UTMPOK) || defined(BUGGYGETLOGIN))
++# if (defined(SVR4) || defined(__MVS__))  && !defined(DGUX) && !defined(__hpux) && !defined(linux)
+ #  include <utmpx.h>
+-#  define UTMPFILE	UTMPX_FILE
++#  define UTMPFILE	__UTMPX_FILE
+ #  define utmp		utmpx
+ #  define getutent	getutxent
+ #  define getutid	getutxid
+@@ -260,7 +262,11 @@ extern int errno;
+ #  define pututline	pututxline
+ #  define setutent	setutxent
+ #  define endutent	endutxent
+-#  define ut_time	ut_xtime
++#  define ut_time ut_tv.tv_sec
++# define e_termination ut_e_termination
++# define e_exit ut_e_exit
++# define ut_addr ut_addr_v6[0]
++#  define ut_name ut_user
+ # else /* SVR4 */
+ #  include <utmp.h>
+ # endif /* SVR4 */
+diff --git a/screen.c b/screen.c
+index 8bce303..430b47a 100644
+--- a/screen.c
++++ b/screen.c
+@@ -313,6 +313,8 @@ struct passwd *ppp;
+ #ifdef SHADOWPW
+ pw_try_again:
+ #endif
++
++#ifndef __MVS__
+   n = 0;
+   if (ppp->pw_passwd[0] == '#' && ppp->pw_passwd[1] == '#' && strcmp(ppp->pw_passwd + 2, ppp->pw_name) == 0)
+     n = 13;
+@@ -324,6 +326,7 @@ pw_try_again:
+ 	     (c >= 'A' && c <= 'Z')))
+ 	break;
+   }
++#endif
+ 
+ #ifdef SHADOWPW
+   /* try to determine real password */
+@@ -339,11 +342,13 @@ pw_try_again:
+       endspent();	/* this should delete all buffers ... */
+   }
+ #endif
++#ifndef __MVS__
+   if (n < 13)
+     ppp->pw_passwd = 0;
+ #ifdef linux
+   if (ppp->pw_passwd && strlen(ppp->pw_passwd) == 13 + 11)
+     ppp->pw_passwd[13] = 0;	/* beware of linux's long passwords */
++#endif
+ #endif
+ 
+   return ppp;
+diff --git a/utmp.c b/utmp.c
+index bb56e2c..50bd11e 100644
+--- a/utmp.c
++++ b/utmp.c
+@@ -38,6 +38,7 @@
+ #include <utempter.h>
+ #endif
+ 
++#include <utmpx.h>
+ 
+ extern struct display *display;
+ #ifdef CAREFULUTMP
+@@ -88,7 +89,7 @@ static void makeuser __P((struct utmp *, char *, char *, int));
+ static void makedead __P((struct utmp *));
+ static int  pututslot __P((slot_t, struct utmp *, char *, struct win *));
+ static struct utmp *getutslot __P((slot_t));
+-#ifndef GETUTENT
++#if defined(GETUTENT) && !defined(__MVS__)
+ static struct utmp *getutent __P((void));
+ static void endutent __P((void));
+ static int  initutmp __P((void));
+@@ -546,7 +547,7 @@ struct win *wi;
+  *  routines using the getut* api
+  */
+ 
+-#ifdef GETUTENT
++#if defined(GETUTENT) || defined(__MVS__)
+ 
+ #define SLOT_USED(u) (u->ut_type == USER_PROCESS)
+ 
