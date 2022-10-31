@@ -82,11 +82,56 @@ index 2a1c2ca..dd8f052 100644
  # else /* SVR4 */
  #  include <utmp.h>
  # endif /* SVR4 */
+diff --git a/process.c b/process.c
+index 004b22a..ca94254 100644
+--- a/process.c
++++ b/process.c
+@@ -45,7 +45,7 @@
+ 
+ 
+ /* for solaris 2.1, Unixware (SVR4.2) and possibly others: */
+-#ifdef HAVE_STROPTS_H
++#if defined(HAVE_STROPTS_H) && !defined(__MVS__)
+ # include <sys/stropts.h>
+ #endif
+ 
+diff --git a/pty.c b/pty.c
+index 6791fd5..6024c45 100644
+--- a/pty.c
++++ b/pty.c
+@@ -43,7 +43,7 @@
+ #endif
+ 
+ /* for solaris 2.1, Unixware (SVR4.2) and possibly others */
+-#ifdef HAVE_STROPTS_H
++#if defined(HAVE_STROPTS_H) && !defined(__MVS__)
+ # include <sys/stropts.h>
+ #endif
+ 
 diff --git a/screen.c b/screen.c
-index 8bce303..430b47a 100644
+index 8bce303..1375c67 100644
 --- a/screen.c
 +++ b/screen.c
-@@ -313,6 +313,8 @@ struct passwd *ppp;
+@@ -42,6 +42,9 @@
+ #ifdef _AIX
+ #include <sys/socket.h>
+ #endif
++#ifdef __MVS__
++#define PATH_MAX 1024
++#endif
+ #include <ctype.h>
+ #include <stdbool.h>
+ #include <string.h>
+@@ -67,7 +70,7 @@
+ 
+ #include "config.h"
+ 
+-#ifdef HAVE_STROPTS_H
++#if defined(HAVE_STROPTS_H) && !defined(__MVS__)
+ # include <sys/stropts.h>
+ #endif
+ 
+@@ -313,6 +316,8 @@ struct passwd *ppp;
  #ifdef SHADOWPW
  pw_try_again:
  #endif
@@ -95,7 +140,7 @@ index 8bce303..430b47a 100644
    n = 0;
    if (ppp->pw_passwd[0] == '#' && ppp->pw_passwd[1] == '#' && strcmp(ppp->pw_passwd + 2, ppp->pw_name) == 0)
      n = 13;
-@@ -324,6 +326,7 @@ pw_try_again:
+@@ -324,6 +329,7 @@ pw_try_again:
  	     (c >= 'A' && c <= 'Z')))
  	break;
    }
@@ -103,7 +148,7 @@ index 8bce303..430b47a 100644
  
  #ifdef SHADOWPW
    /* try to determine real password */
-@@ -339,11 +342,13 @@ pw_try_again:
+@@ -339,11 +345,13 @@ pw_try_again:
        endspent();	/* this should delete all buffers ... */
    }
  #endif
@@ -117,6 +162,15 @@ index 8bce303..430b47a 100644
  #endif
  
    return ppp;
+@@ -390,7 +398,7 @@ int main(int ac, char** av)
+ #if (defined(AUX) || defined(_AUX_SOURCE)) && defined(POSIX)
+   setcompat(COMPAT_POSIX|COMPAT_BSDPROT); /* turn on seteuid support */
+ #endif
+-#if defined(sun) && defined(SVR4)
++#if (defined(sun) && defined(SVR4)) || defined(__MVS__)
+   {
+     /* Solaris' login blocks SIGHUP! This is _very bad_ */
+     sigset_t sset;
 diff --git a/utmp.c b/utmp.c
 index bb56e2c..50bd11e 100644
 --- a/utmp.c
