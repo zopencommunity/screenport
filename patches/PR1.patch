@@ -171,6 +171,30 @@ index 8bce303..1375c67 100644
    {
      /* Solaris' login blocks SIGHUP! This is _very bad_ */
      sigset_t sset;
+diff --git a/tty.sh b/tty.sh
+index d408720..fc5bc1b 100644
+--- a/tty.sh
++++ b/tty.sh
+@@ -76,6 +76,10 @@ exit 0
+ #endif
+ #include <limits.h>
+ 
++#ifdef __MVS__
++#define PATH_MAX 1024
++#endif
++
+ #ifdef ISC
+ # include <sys/tty.h>
+ # include <sys/sioctl.h>
+@@ -83,7 +87,7 @@ exit 0
+ #endif
+ 
+ #include "config.h"
+-#ifdef HAVE_STROPTS_H
++#if defined(HAVE_STROPTS_H) && !defined(__MVS__)
+ #include <sys/stropts.h>	/* for I_POP */
+ #endif
+ 
 diff --git a/utmp.c b/utmp.c
 index bb56e2c..50bd11e 100644
 --- a/utmp.c
