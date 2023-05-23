@@ -1,51 +1,61 @@
 diff --git a/acls.c b/acls.c
-index 1de8e89..541b75a 100644
+index 1de8e89..ded275e 100644
 --- a/acls.c
 +++ b/acls.c
-@@ -529,7 +529,7 @@ char *name, *pw1, *pw2;
+@@ -529,7 +529,11 @@ char *name, *pw1, *pw2;
  	    }
  	}
        else
--        pass = pp->pw_passwd;
-+        //pass = pp->pw_passwd;
++#ifdef __MVS__
++        pass = ""; //TODO
++#else
+         pass = pp->pw_passwd;
++#endif
  #ifdef SHADOWPW
        for (t = 0; t < 13; t++)
          {
 diff --git a/attacher.c b/attacher.c
-index 18ba43c..1a45c43 100644
+index 18ba43c..097a14e 100644
 --- a/attacher.c
 +++ b/attacher.c
-@@ -891,7 +891,7 @@ screen_builtin_lck()
+@@ -891,7 +891,11 @@ screen_builtin_lck()
      {
  #endif
    using_pam = 0;
--  pass = ppp->pw_passwd;
-+  pass = 0 ;//ppp->pw_passwd;
++#ifndef __MVS__
+   pass = ppp->pw_passwd;
++#else
++  pass = "";
++#endif
    if (pass == 0 || *pass == 0)
      {
        if ((pass = getpass("Key:   ")))
-@@ -927,14 +927,14 @@ screen_builtin_lck()
+@@ -927,14 +931,20 @@ screen_builtin_lck()
            sleep(2);
            return;
  	}
--      pass = ppp->pw_passwd = SaveStr(pass);
-+      pass = 0; // ppp->pw_passwd = SaveStr(pass);
++#ifndef __MVS__
+       pass = ppp->pw_passwd = SaveStr(pass);
++#endif
      }
  #ifdef USE_PAM
      }
  #endif
  
    debug("screen_builtin_lck looking in gcos field\n");
--  strncpy(fullname, ppp->pw_gecos, sizeof(fullname) - 9);
-+  //strncpy(fullname, ppp->pw_gecos, sizeof(fullname) - 9);
++#ifndef __MVS__
+   strncpy(fullname, ppp->pw_gecos, sizeof(fullname) - 9);
++#else
++  strncpy(fullname, "N/A",  sizeof(fullname) - 9);
++#endif
    fullname[sizeof(fullname) - 9] = 0;
  
    if ((cp1 = index(fullname, ',')) != NULL)
 diff --git a/os.h b/os.h
-index 2a1c2ca..dd8f052 100644
+index 2a1c2ca..71bef27 100644
 --- a/os.h
 +++ b/os.h
-@@ -30,7 +30,9 @@
+@@ -30,14 +30,16 @@
  #include <stdio.h>
  #include <errno.h>
  
@@ -55,6 +65,23 @@ index 2a1c2ca..dd8f052 100644
  
  /* In strict ANSI mode, HP-UX machines define __hpux but not hpux */
  #if defined(__hpux) && !defined(hpux)
+ # define hpux
+ #endif
+ 
+-#if defined(__bsdi__) || defined(__386BSD__) || defined(_CX_UX) || defined(hpux) || defined(_IBMR2) || defined(linux)
++#if defined(__bsdi__) || defined(__386BSD__) || defined(_CX_UX) || defined(hpux) || defined(_IBMR2) || defined(linux) || defined(__MVS__)
+ # include <signal.h>
+ #endif /* __bsdi__ || __386BSD__ || _CX_UX || hpux || _IBMR2 || linux */
+ 
+@@ -230,7 +232,7 @@ extern int errno;
+  * Joe Traister: On AIX4, programs like irc won't work if screen
+  * uses TIOCPKT (select fails to return on pty read).
+  */
+-#if defined(sgi) || defined(DGUX) || defined(_IBMR2)
++#if defined(sgi) || defined(DGUX) || defined(_IBMR2) || defined(__MVS__)
+ # undef TIOCPKT
+ #endif
+ 
 @@ -249,10 +251,10 @@ extern int errno;
    typedef int slot_t;
  #endif
@@ -82,56 +109,125 @@ index 2a1c2ca..dd8f052 100644
  # else /* SVR4 */
  #  include <utmp.h>
  # endif /* SVR4 */
+@@ -401,7 +407,7 @@ extern int errno;
+ #endif
+ 
+ /* Geeeee, reverse it? */
+-#if defined(SVR4) || (defined(SYSV) && defined(ISC)) || defined(_AIX) || defined(linux) || defined(ultrix) || defined(__386BSD__) || defined(__bsdi__) || defined(POSIX) || defined(NeXT)
++#if defined(SVR4) || (defined(SYSV) && defined(ISC)) || defined(_AIX) || defined(__MVS__) || defined(linux) || defined(ultrix) || defined(__386BSD__) || defined(__bsdi__) || defined(POSIX) || defined(NeXT)
+ # define SIGHASARG
+ #endif
+ 
+diff --git a/osdef.h.in b/osdef.h.in
+index 6ddbd66..074c0c1 100644
+--- a/osdef.h.in
++++ b/osdef.h.in
+@@ -153,7 +153,7 @@ extern int   socket __P((int, int, int));
+ extern int   connect __P((int, struct sockaddr *, int));
+ extern int   bind __P((int, struct sockaddr *, int));
+ extern int   listen __P((int, int));
+-#ifdef _AIX
++#if defined(__MVS__)
+ extern int   accept __P((int, struct sockaddr *, socklen_t *));
+ #else
+ extern int   accept __P((int, struct sockaddr *, int *));
 diff --git a/process.c b/process.c
-index 004b22a..ca94254 100644
+index 004b22a..c632a70 100644
 --- a/process.c
 +++ b/process.c
-@@ -45,7 +45,7 @@
- 
+@@ -46,7 +46,7 @@
  
  /* for solaris 2.1, Unixware (SVR4.2) and possibly others: */
--#ifdef HAVE_STROPTS_H
-+#if defined(HAVE_STROPTS_H) && !defined(__MVS__)
- # include <sys/stropts.h>
+ #ifdef HAVE_STROPTS_H
+-# include <sys/stropts.h>
++# include <stropts.h>
  #endif
  
+ #include "screen.h"
+@@ -4055,7 +4055,9 @@ int key;
+ 	    break;
+ 	  ApplyAttrColor(i, &mchar_so);
+ 	  WindowChanged((struct win *)0, 0);
++#ifndef __MVS__
+ 	  debug2("--> %x %x\n", mchar_so.attr, mchar_so.color);
++#endif
+ 	}
+       if (msgok)
+ #ifdef COLOR
 diff --git a/pty.c b/pty.c
-index 6791fd5..6024c45 100644
+index 6791fd5..50415fc 100644
 --- a/pty.c
 +++ b/pty.c
-@@ -43,7 +43,7 @@
- #endif
+@@ -44,8 +44,12 @@
  
  /* for solaris 2.1, Unixware (SVR4.2) and possibly others */
--#ifdef HAVE_STROPTS_H
-+#if defined(HAVE_STROPTS_H) && !defined(__MVS__)
+ #ifdef HAVE_STROPTS_H
++#ifdef __MVS__
++# include <stropts.h>
++#else
  # include <sys/stropts.h>
  #endif
++#endif
  
+ #if defined(sun) && defined(LOCKPTY) && !defined(TIOCEXCL)
+ # include <sys/ttold.h>
+@@ -67,11 +71,19 @@
+  * if no PTYRANGE[01] is in the config file, we pick a default
+  */
+ #ifndef PTYRANGE0
++#ifdef __MVS__
++# define PTYRANGE0 "012"
++#else
+ # define PTYRANGE0 "qpr"
+ #endif
++#endif
+ #ifndef PTYRANGE1
++#ifdef __MVS__
++# define PTYRANGE1 "0123456789"
++#else
+ # define PTYRANGE1 "0123456789abcdef"
+ #endif
++#endif
+ 
+ /* SVR4 pseudo ttys don't seem to work with SCO-5 */
+ #ifdef M_UNIX
+@@ -91,6 +103,9 @@ static char TtyProto[] = "/dev/pty/ttyXY";
+ #  ifdef M_UNIX
+ static char PtyProto[] = "/dev/ptypXY";
+ static char TtyProto[] = "/dev/ttypXY";
++#  elif defined(__MVS__)
++static char PtyProto[] = "/dev/ptyp00XY";
++static char TtyProto[] = "/dev/ttyp00XY";
+ #  else
+ static char PtyProto[] = "/dev/ptyXY";
+ static char TtyProto[] = "/dev/ttyXY";
 diff --git a/screen.c b/screen.c
-index 8bce303..1375c67 100644
+index 8bce303..554f578 100644
 --- a/screen.c
 +++ b/screen.c
-@@ -42,6 +42,9 @@
- #ifdef _AIX
+@@ -39,7 +39,7 @@
+  */
+ 
+ #include <sys/types.h>
+-#ifdef _AIX
++#if defined(__MVS__)
  #include <sys/socket.h>
  #endif
-+#ifdef __MVS__
-+#define PATH_MAX 1024
-+#endif
  #include <ctype.h>
- #include <stdbool.h>
- #include <string.h>
-@@ -67,7 +70,7 @@
- 
+@@ -68,8 +68,12 @@
  #include "config.h"
  
--#ifdef HAVE_STROPTS_H
-+#if defined(HAVE_STROPTS_H) && !defined(__MVS__)
+ #ifdef HAVE_STROPTS_H
++#ifdef __MVS__
++# include <stropts.h>
++#else
  # include <sys/stropts.h>
  #endif
++#endif
  
-@@ -313,6 +316,8 @@ struct passwd *ppp;
+ #if defined(SYSV) && !defined(ISC)
+ # include <sys/utsname.h>
+@@ -313,6 +317,8 @@ struct passwd *ppp;
  #ifdef SHADOWPW
  pw_try_again:
  #endif
@@ -140,7 +236,7 @@ index 8bce303..1375c67 100644
    n = 0;
    if (ppp->pw_passwd[0] == '#' && ppp->pw_passwd[1] == '#' && strcmp(ppp->pw_passwd + 2, ppp->pw_name) == 0)
      n = 13;
-@@ -324,6 +329,7 @@ pw_try_again:
+@@ -324,6 +330,7 @@ pw_try_again:
  	     (c >= 'A' && c <= 'Z')))
  	break;
    }
@@ -148,7 +244,7 @@ index 8bce303..1375c67 100644
  
  #ifdef SHADOWPW
    /* try to determine real password */
-@@ -339,11 +345,13 @@ pw_try_again:
+@@ -339,11 +346,13 @@ pw_try_again:
        endspent();	/* this should delete all buffers ... */
    }
  #endif
@@ -162,39 +258,41 @@ index 8bce303..1375c67 100644
  #endif
  
    return ppp;
-@@ -390,7 +398,7 @@ int main(int ac, char** av)
+@@ -390,7 +399,7 @@ int main(int ac, char** av)
  #if (defined(AUX) || defined(_AUX_SOURCE)) && defined(POSIX)
    setcompat(COMPAT_POSIX|COMPAT_BSDPROT); /* turn on seteuid support */
  #endif
 -#if defined(sun) && defined(SVR4)
-+#if (defined(sun) && defined(SVR4)) || defined(__MVS__)
++#if (defined(sun) && defined(SVR4))
    {
      /* Solaris' login blocks SIGHUP! This is _very bad_ */
      sigset_t sset;
 diff --git a/tty.sh b/tty.sh
-index d408720..fc5bc1b 100644
+index d408720..26106fe 100644
 --- a/tty.sh
 +++ b/tty.sh
-@@ -76,6 +76,10 @@ exit 0
- #endif
- #include <limits.h>
- 
-+#ifdef __MVS__
-+#define PATH_MAX 1024
-+#endif
-+
- #ifdef ISC
- # include <sys/tty.h>
- # include <sys/sioctl.h>
-@@ -83,7 +87,7 @@ exit 0
- #endif
+@@ -84,8 +84,12 @@ exit 0
  
  #include "config.h"
--#ifdef HAVE_STROPTS_H
-+#if defined(HAVE_STROPTS_H) && !defined(__MVS__)
+ #ifdef HAVE_STROPTS_H
++#ifdef __MVS__
++#include <stropts.h>	/* for I_POP */
++#else
  #include <sys/stropts.h>	/* for I_POP */
  #endif
++#endif
  
+ #include "screen.h"
+ #include "extern.h"
+@@ -206,7 +210,7 @@ int OpenTTY(char *line, char *opt)
+ #endif
+   SetTTY(f, &Mode);
+ 
+-#if defined(linux) && defined(TIOCMSET)
++#if (defined(linux) || defined(__MVS__)) && defined(TIOCMSET)
+   {
+     int mcs = 0;
+     ioctl(f, TIOCMGET, &mcs);
 diff --git a/utmp.c b/utmp.c
 index bb56e2c..50bd11e 100644
 --- a/utmp.c

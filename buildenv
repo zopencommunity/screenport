@@ -2,8 +2,10 @@ export ZOPEN_TARBALL_URL="http://ftp.gnu.org/gnu/screen/screen-4.9.0.tar.gz"
 export ZOPEN_TARBALL_DEPS="curl make gzip tar ncurses m4 perl autoconf automake zoslib"
 export ZOPEN_BOOTSTRAP="./autogen.sh"
 export ZOPEN_TYPE="TARBALL"
-export ZOPEN_EXTRA_CPPFLAGS="-DSCREENENCODINGS=\'$ZOPEN_ROOT/screen-4.9.0/utf8encodings/\'"
+export ZOPEN_EXTRA_CPPFLAGS="-DPATH_MAX=1024"
+export ZOPEN_MAKE_MINIMAL=yes
 export ZOPEN_CHECK="skip"
+export ZOPEN_COMP=CLANG
 
 zopen_append_to_env()
 {
