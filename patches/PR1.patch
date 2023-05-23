@@ -155,105 +155,52 @@ index 004b22a..c632a70 100644
        if (msgok)
  #ifdef COLOR
 diff --git a/pty.c b/pty.c
-index 6791fd5..96042fe 100644
+index 6791fd5..50415fc 100644
 --- a/pty.c
 +++ b/pty.c
-@@ -44,7 +44,7 @@
+@@ -44,8 +44,12 @@
  
  /* for solaris 2.1, Unixware (SVR4.2) and possibly others */
  #ifdef HAVE_STROPTS_H
--# include <sys/stropts.h>
++#ifdef __MVS__
 +# include <stropts.h>
++#else
+ # include <sys/stropts.h>
  #endif
++#endif
  
  #if defined(sun) && defined(LOCKPTY) && !defined(TIOCEXCL)
-@@ -67,10 +67,10 @@
+ # include <sys/ttold.h>
+@@ -67,11 +71,19 @@
   * if no PTYRANGE[01] is in the config file, we pick a default
   */
  #ifndef PTYRANGE0
--# define PTYRANGE0 "qpr"
++#ifdef __MVS__
 +# define PTYRANGE0 "012"
++#else
+ # define PTYRANGE0 "qpr"
  #endif
++#endif
  #ifndef PTYRANGE1
--# define PTYRANGE1 "0123456789abcdef"
++#ifdef __MVS__
 +# define PTYRANGE1 "0123456789"
++#else
+ # define PTYRANGE1 "0123456789abcdef"
  #endif
++#endif
  
  /* SVR4 pseudo ttys don't seem to work with SCO-5 */
-@@ -88,12 +88,12 @@ static char PtyName[32], TtyName[32];
- static char PtyProto[] = "/dev/ptym/ptyXY";
- static char TtyProto[] = "/dev/pty/ttyXY";
- # else
--#  ifdef M_UNIX
-+#  if defined(M_UNIX)
+ #ifdef M_UNIX
+@@ -91,6 +103,9 @@ static char TtyProto[] = "/dev/pty/ttyXY";
+ #  ifdef M_UNIX
  static char PtyProto[] = "/dev/ptypXY";
  static char TtyProto[] = "/dev/ttypXY";
- #  else
--static char PtyProto[] = "/dev/ptyXY";
--static char TtyProto[] = "/dev/ttyXY";
++#  elif defined(__MVS__)
 +static char PtyProto[] = "/dev/ptyp00XY";
 +static char TtyProto[] = "/dev/ttyp00XY";
- #  endif
- # endif /* hpux */
- #endif
-@@ -318,7 +318,7 @@ char **ttyn;
-       return -1;
-     }
-   initmaster(f);
--# ifdef _IBMR2
-+# if defined(_IBMR2)
-   pty_preopen = 1;
- # endif
-   *ttyn = TtyName;
-@@ -369,30 +369,18 @@ char **ttyn;
- 	  debug1("OpenPTY tries '%s'\n", PtyName);
- 	  if ((f = open(PtyName, O_RDWR | O_NOCTTY)) == -1)
- 	    continue;
-+	  debug1("Bad0 tries '%s'\n", PtyName);
- 	  q[0] = *l;
- 	  q[1] = *d;
- 	  if (eff_uid && access(TtyName, R_OK | W_OK))
- 	    {
-+	  debug1("Bad1 tries '%s'\n", PtyName);
- 	      close(f);
- 	      continue;
- 	    }
--#if defined(sun) && defined(TIOCGPGRP) && !defined(SUNOS3)
--	  /* Hack to ensure that the slave side of the pty is
--	   * unused. May not work in anything other than SunOS4.1
--	   */
--	    {
--	      int pgrp;
--
--	      /* tcgetpgrp does not work (uses TIOCGETPGRP)! */
--	      if (ioctl(f, TIOCGPGRP, (char *)&pgrp) != -1 || errno != EIO)
--		{
--		  close(f);
--		  continue;
--		}
--	    }
--#endif
- 	  initmaster(f);
- 	  *ttyn = TtyName;
-+	  debug1("Good tries '%s'\n", PtyName);
- 	  return f;
- 	}
-     }
-diff --git a/resize.c b/resize.c
-index 070d3ed..e2c0ff4 100644
---- a/resize.c
-+++ b/resize.c
-@@ -997,8 +997,10 @@ int wi, he, hi;
-   /* store new size */
-   p->w_width = wi;
-   p->w_height = he;
-+//#ifndef __MVS__
-   if(p->w_scrollback_height > hi)
-     p->w_scrollback_height = hi;
-+//#endif
- #ifdef COPY_PASTE
-   p->w_histidx = 0;
-   p->w_histheight = hi;
+ #  else
+ static char PtyProto[] = "/dev/ptyXY";
+ static char TtyProto[] = "/dev/ttyXY";
 diff --git a/screen.c b/screen.c
 index 8bce303..554f578 100644
 --- a/screen.c
