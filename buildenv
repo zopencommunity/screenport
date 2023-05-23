@@ -7,6 +7,7 @@ export ZOPEN_MAKE_MINIMAL=yes
 export ZOPEN_CHECK="skip"
 export ZOPEN_COMP=CLANG
 
+
 zopen_append_to_env()
 {
   # echo envars outside of PATH, MANPATH, LIBPATH
