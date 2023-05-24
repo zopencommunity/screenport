@@ -2,7 +2,7 @@ node('linux')
 {
 
    
-  stage (Poll) {
+  stage ('Poll') {
                 checkout([
                         $class: 'GitSCM',
                         branches: [[name: '*/main']],
