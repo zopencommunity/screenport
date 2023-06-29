@@ -1,0 +1,80 @@
+diff --git a/screen.c b/screen.c
+index 8bce303..05357bb 100644
+--- a/screen.c
++++ b/screen.c
+@@ -39,7 +39,7 @@
+  */
+ 
+ #include <sys/types.h>
+-#ifdef _AIX
++#if defined(__MVS__)
+ #include <sys/socket.h>
+ #endif
+ #include <ctype.h>
+@@ -68,8 +68,12 @@
+ #include "config.h"
+ 
+ #ifdef HAVE_STROPTS_H
++#ifdef __MVS__
++# include <stropts.h>
++#else
+ # include <sys/stropts.h>
+ #endif
++#endif
+ 
+ #if defined(SYSV) && !defined(ISC)
+ # include <sys/utsname.h>
+@@ -313,6 +317,8 @@ struct passwd *ppp;
+ #ifdef SHADOWPW
+ pw_try_again:
+ #endif
++
++#ifndef __MVS__
+   n = 0;
+   if (ppp->pw_passwd[0] == '#' && ppp->pw_passwd[1] == '#' && strcmp(ppp->pw_passwd + 2, ppp->pw_name) == 0)
+     n = 13;
+@@ -324,6 +330,7 @@ pw_try_again:
+ 	     (c >= 'A' && c <= 'Z')))
+ 	break;
+   }
++#endif
+ 
+ #ifdef SHADOWPW
+   /* try to determine real password */
+@@ -339,11 +346,13 @@ pw_try_again:
+       endspent();	/* this should delete all buffers ... */
+   }
+ #endif
++#ifndef __MVS__
+   if (n < 13)
+     ppp->pw_passwd = 0;
+ #ifdef linux
+   if (ppp->pw_passwd && strlen(ppp->pw_passwd) == 13 + 11)
+     ppp->pw_passwd[13] = 0;	/* beware of linux's long passwords */
++#endif
+ #endif
+ 
+   return ppp;
+@@ -390,7 +399,7 @@ int main(int ac, char** av)
+ #if (defined(AUX) || defined(_AUX_SOURCE)) && defined(POSIX)
+   setcompat(COMPAT_POSIX|COMPAT_BSDPROT); /* turn on seteuid support */
+ #endif
+-#if defined(sun) && defined(SVR4)
++#if (defined(sun) && defined(SVR4))
+   {
+     /* Solaris' login blocks SIGHUP! This is _very bad_ */
+     sigset_t sset;
+@@ -826,8 +835,13 @@ int main(int ac, char** av)
+ #  ifndef USE_LOCALE
+     setlocale(LC_CTYPE, "");
+ #  endif
++#ifndef __MVS__
+     nwin_options.encoding = FindEncoding(nl_langinfo(CODESET));
+     debug1("locale says encoding = %d\n", nwin_options.encoding);
++#else
++    // Force UTF8 on z/OS
++    nwin_options.encoding = UTF8;
++#endif
+ # else
+ #  ifdef UTF8
+     char *s;

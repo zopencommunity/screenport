@@ -1,0 +1,47 @@
+diff --git a/pty.c b/pty.c
+index 6791fd5..abea256 100644
+--- a/pty.c
++++ b/pty.c
+@@ -44,8 +44,12 @@
+ 
+ /* for solaris 2.1, Unixware (SVR4.2) and possibly others */
+ #ifdef HAVE_STROPTS_H
++#ifdef __MVS__
++# include <stropts.h>
++#else
+ # include <sys/stropts.h>
+ #endif
++#endif
+ 
+ #if defined(sun) && defined(LOCKPTY) && !defined(TIOCEXCL)
+ # include <sys/ttold.h>
+@@ -67,11 +71,19 @@
+  * if no PTYRANGE[01] is in the config file, we pick a default
+  */
+ #ifndef PTYRANGE0
++#ifdef __MVS__
++# define PTYRANGE0 "0123"
++#else
+ # define PTYRANGE0 "qpr"
+ #endif
++#endif
+ #ifndef PTYRANGE1
++#ifdef __MVS__
++# define PTYRANGE1 "0123456789"
++#else
+ # define PTYRANGE1 "0123456789abcdef"
+ #endif
++#endif
+ 
+ /* SVR4 pseudo ttys don't seem to work with SCO-5 */
+ #ifdef M_UNIX
+@@ -91,6 +103,9 @@ static char TtyProto[] = "/dev/pty/ttyXY";
+ #  ifdef M_UNIX
+ static char PtyProto[] = "/dev/ptypXY";
+ static char TtyProto[] = "/dev/ttypXY";
++#  elif defined(__MVS__)
++static char PtyProto[] = "/dev/ptyp00XY";
++static char TtyProto[] = "/dev/ttyp00XY";
+ #  else
+ static char PtyProto[] = "/dev/ptyXY";
+ static char TtyProto[] = "/dev/ttyXY";

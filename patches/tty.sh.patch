@@ -1,0 +1,40 @@
+diff --git a/tty.sh b/tty.sh
+index d408720..ab8af4f 100644
+--- a/tty.sh
++++ b/tty.sh
+@@ -84,8 +84,12 @@ exit 0
+ 
+ #include "config.h"
+ #ifdef HAVE_STROPTS_H
++#ifdef __MVS__
++#include <stropts.h>	/* for I_POP */
++#else
+ #include <sys/stropts.h>	/* for I_POP */
+ #endif
++#endif
+ 
+ #include "screen.h"
+ #include "extern.h"
+@@ -206,7 +210,7 @@ int OpenTTY(char *line, char *opt)
+ #endif
+   SetTTY(f, &Mode);
+ 
+-#if defined(linux) && defined(TIOCMSET)
++#if (defined(linux) || defined(__MVS__)) && defined(TIOCMSET)
+   {
+     int mcs = 0;
+     ioctl(f, TIOCMGET, &mcs);
+@@ -421,7 +425,12 @@ void SetTTY(int fd, struct mode *mp)
+ {
+   errno = 0;
+ #ifdef POSIX
+-  tcsetattr(fd, TCSADRAIN, &mp->tio);
++  int rc = tcsetattr(fd, TCSADRAIN, &mp->tio);
++  if (rc) {
++    errno = 0;
++    mp->tio.c_cflag &= ~PKTXTND; // Causes isues on z/OS
++    tcsetattr(fd, TCSADRAIN, &mp->tio);
++  }
+ # ifdef HPUX_LTCHARS_HACK
+   ioctl(fd, TIOCSLTC, (char *)&mp->m_ltchars);
+ # endif
