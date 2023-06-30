@@ -1,5 +1,5 @@
 diff --git a/pty.c b/pty.c
-index 6791fd5..abea256 100644
+index 6791fd5..2072842 100644
 --- a/pty.c
 +++ b/pty.c
 @@ -44,8 +44,12 @@
@@ -15,12 +15,12 @@ index 6791fd5..abea256 100644
  
  #if defined(sun) && defined(LOCKPTY) && !defined(TIOCEXCL)
  # include <sys/ttold.h>
-@@ -67,11 +71,19 @@
+@@ -67,11 +71,22 @@
   * if no PTYRANGE[01] is in the config file, we pick a default
   */
  #ifndef PTYRANGE0
 +#ifdef __MVS__
-+# define PTYRANGE0 "0123"
++# define PTYRANGE0 "0123456789"
 +#else
  # define PTYRANGE0 "qpr"
  #endif
@@ -32,16 +32,52 @@ index 6791fd5..abea256 100644
  # define PTYRANGE1 "0123456789abcdef"
  #endif
 +#endif
++#ifdef __MVS__
++# define PTYRANGE2 "0123456789"
++#endif
  
  /* SVR4 pseudo ttys don't seem to work with SCO-5 */
  #ifdef M_UNIX
-@@ -91,6 +103,9 @@ static char TtyProto[] = "/dev/pty/ttyXY";
+@@ -91,6 +106,9 @@ static char TtyProto[] = "/dev/pty/ttyXY";
  #  ifdef M_UNIX
  static char PtyProto[] = "/dev/ptypXY";
  static char TtyProto[] = "/dev/ttypXY";
 +#  elif defined(__MVS__)
-+static char PtyProto[] = "/dev/ptyp00XY";
-+static char TtyProto[] = "/dev/ttyp00XY";
++static char PtyProto[] = "/dev/ptyp0XYZ";
++static char TtyProto[] = "/dev/ttyp0XYZ";
  #  else
  static char PtyProto[] = "/dev/ptyXY";
  static char TtyProto[] = "/dev/ttyXY";
+@@ -352,7 +370,7 @@ int
+ OpenPTY(ttyn)
+ char **ttyn;
+ {
+-  register char *p, *q, *l, *d;
++  register char *p, *q, *l, *d, *r;
+   register int f;
+ 
+   debug("OpenPTY: Using BSD style ptys.\n");
+@@ -365,12 +383,15 @@ char **ttyn;
+   for (l = PTYRANGE0; (*p = *l) != '\0'; l++)
+     {
+       for (d = PTYRANGE1; (p[1] = *d) != '\0'; d++)
++	{
++      for (r = PTYRANGE2; (p[2] = *r) != '\0'; r++)
+ 	{
+ 	  debug1("OpenPTY tries '%s'\n", PtyName);
+ 	  if ((f = open(PtyName, O_RDWR | O_NOCTTY)) == -1)
+ 	    continue;
+ 	  q[0] = *l;
+ 	  q[1] = *d;
++	  q[2] = *r;
+ 	  if (eff_uid && access(TtyName, R_OK | W_OK))
+ 	    {
+ 	      close(f);
+@@ -396,6 +417,7 @@ char **ttyn;
+ 	  return f;
+ 	}
+     }
++}
+   return -1;
+ }
+ #endif
