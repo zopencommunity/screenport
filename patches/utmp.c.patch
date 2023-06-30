@@ -1,0 +1,112 @@
+diff --git a/utmp.c b/utmp.c
+index bb56e2c..f70493a 100644
+--- a/utmp.c
++++ b/utmp.c
+@@ -38,6 +38,7 @@
+ #include <utempter.h>
+ #endif
+ 
++#include <utmpx.h>
+ 
+ extern struct display *display;
+ #ifdef CAREFULUTMP
+@@ -88,7 +89,7 @@ static void makeuser __P((struct utmp *, char *, char *, int));
+ static void makedead __P((struct utmp *));
+ static int  pututslot __P((slot_t, struct utmp *, char *, struct win *));
+ static struct utmp *getutslot __P((slot_t));
+-#ifndef GETUTENT
++#if defined(GETUTENT) && !defined(__MVS__)
+ static struct utmp *getutent __P((void));
+ static void endutent __P((void));
+ static int  initutmp __P((void));
+@@ -279,6 +280,10 @@ InitUtmp()
+ # endif /* GETUTENT */
+ #endif	/* UTMP_HELPER */
+   utmpok = 1;
++#ifdef __MVS__
++  //TODO: fix utmp issues
++  utmpok = 0;
++#endif
+ }
+ 
+ 
+@@ -316,40 +321,52 @@ RemoveLoginSlot()
+   ASSERT(display);
+   debug("RemoveLoginSlot: removing your logintty\n");
+   D_loginslot = TtyNameSlot(D_usertty);
++  debug1("Igor: %d\n", __LINE__);
+   if (D_loginslot == (slot_t)0 || D_loginslot == (slot_t)-1)
+     return;
++  debug1("Igor: %d\n", __LINE__);
+ #ifdef UTMP_HELPER
+   if (eff_uid)	/* helpers can't do login slots. sigh. */
+ #else
+   if (!utmpok)
+ #endif
+     {
++  debug1("Igor: %d\n", __LINE__);
+       D_loginslot = 0;
+       debug("RemoveLoginSlot: utmpok == 0\n");
++  debug1("Igor: %d\n", __LINE__);
+     }
+   else
+     {
+ #ifdef _SEQUENT_
+       {
++  debug1("Igor: %d\n", __LINE__);
+ 	char *p;
+ 	if ((p = ut_find_host(D_loginslot)) != 0)
+ 	  strncpy(D_loginhost, p, sizeof(D_loginhost) - 1);
+ 	D_loginhost[sizeof(D_loginhost) - 1] = 0;
++  debug1("Igor: %d\n", __LINE__);
+       }
+ #endif /* _SEQUENT_ */
+ 
++  debug1("Igor: %d - %s\n", __LINE__);
+       if ((uu = getutslot(D_loginslot)) == 0)
+ 	{
++  debug1("Igor: %d\n", __LINE__);
+ 	  debug("Utmp slot not found -> not removed");
+ 	  D_loginslot = 0;
++  debug1("Igor: %d\n", __LINE__);
+ 	}
+       else
+ 	{
++  debug1("Igor: %d\n", __LINE__);
+ 	  D_utmp_logintty = *uu;
+ 	  u = *uu;
+ 	  makedead(&u);
++  debug1("Igor: %d\n", __LINE__);
+ 	  if (pututslot(D_loginslot, &u, (char *)0, (struct win *)0) == 0)
+ 	    D_loginslot = 0;
++  debug1("Igor: %d\n", __LINE__);
+ 	}
+       UT_CLOSE;
+     }
+@@ -367,6 +384,7 @@ RemoveLoginSlot()
+ 	  chmod(D_usertty, stb.st_mode & 0600);
+ 	}
+     }
++  debug1("Igor: %d\n", __LINE__);
+ }
+ 
+ /*
+@@ -546,7 +564,7 @@ struct win *wi;
+  *  routines using the getut* api
+  */
+ 
+-#ifdef GETUTENT
++#if defined(GETUTENT) || defined(__MVS__)
+ 
+ #define SLOT_USED(u) (u->ut_type == USER_PROCESS)
+ 
+@@ -556,7 +574,9 @@ slot_t slot;
+ {
+   struct utmp u;
+   bzero((char *)&u, sizeof(u));
++  debug("In getutslot");
+   strncpy(u.ut_line, slot, sizeof(u.ut_line));
++  debug("After getutslot");
+   setutent();
+   return getutline(&u);
+ }

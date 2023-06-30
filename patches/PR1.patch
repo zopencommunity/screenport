@@ -154,33 +154,3 @@ index 004b22a..c632a70 100644
  	}
        if (msgok)
  #ifdef COLOR
-diff --git a/utmp.c b/utmp.c
-index bb56e2c..50bd11e 100644
---- a/utmp.c
-+++ b/utmp.c
-@@ -38,6 +38,7 @@
- #include <utempter.h>
- #endif
- 
-+#include <utmpx.h>
- 
- extern struct display *display;
- #ifdef CAREFULUTMP
-@@ -88,7 +89,7 @@ static void makeuser __P((struct utmp *, char *, char *, int));
- static void makedead __P((struct utmp *));
- static int  pututslot __P((slot_t, struct utmp *, char *, struct win *));
- static struct utmp *getutslot __P((slot_t));
--#ifndef GETUTENT
-+#if defined(GETUTENT) && !defined(__MVS__)
- static struct utmp *getutent __P((void));
- static void endutent __P((void));
- static int  initutmp __P((void));
-@@ -546,7 +547,7 @@ struct win *wi;
-  *  routines using the getut* api
-  */
- 
--#ifdef GETUTENT
-+#if defined(GETUTENT) || defined(__MVS__)
- 
- #define SLOT_USED(u) (u->ut_type == USER_PROCESS)
- 
