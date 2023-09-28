@@ -11,6 +11,6 @@ node('linux')
                         userRemoteConfigs: [[url: "https://github.com/ZOSOpenTools/screenport.git"]]])
         }
   stage('Build') {
-    build job: 'Port-Pipeline', parameters: [string(name: 'PORT_GITHUB_REPO', value: 'https://github.com/ZOSOpenTools/screenport.git'), string(name: 'PORT_DESCRIPTION', value: 'GNU Screen' )]
+    build job: 'Port-Pipeline', parameters: [string(name: 'PORT_GITHUB_REPO', value: 'https://github.com/ZOSOpenTools/screenport.git'), string(name: 'PORT_DESCRIPTION', value: 'GNU Screen' ), string(name: 'NODE_LABEL', value: "v2r4")]
   }
 }
