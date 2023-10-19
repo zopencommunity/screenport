@@ -1,0 +1,16 @@
+diff --git a/acls.c b/acls.c
+index e3f2fa7..248aa4e 100644
+--- a/acls.c
++++ b/acls.c
+@@ -493,7 +493,11 @@ DoSu(struct acluser **up, char *name, char *pw1, char *pw2)
+ 				sorry++;
+ 			}
+ 		} else
++#ifdef __MVS__
++			pass = "";
++#else
+ 			pass = pp->pw_passwd;
++#endif
+ #ifdef SHADOWPW
+ 		for (t = 0; t < 13; t++) {
+ 			c = pass[t];

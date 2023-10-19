@@ -1,7 +1,7 @@
-export ZOPEN_TARBALL_URL="http://ftp.gnu.org/gnu/screen/screen-4.9.0.tar.gz"
-export ZOPEN_TARBALL_DEPS="curl make gzip tar ncurses m4 perl autoconf automake zoslib"
+export ZOPEN_STABLE_URL="http://ftp.gnu.org/gnu/screen/screen-4.9.1.tar.gz"
+export ZOPEN_STABLE_DEPS="curl make gzip tar ncurses m4 perl autoconf automake zoslib"
 export ZOPEN_BOOTSTRAP="./autogen.sh"
-export ZOPEN_TYPE="TARBALL"
+export ZOPEN_BUILD_LINE="STABLE"
 export ZOPEN_EXTRA_CFLAGS="-DDEBUG" # Provides logging in case of functional issues
 export ZOPEN_MAKE_MINIMAL=yes
 export ZOPEN_CHECK="skip"
@@ -18,4 +18,9 @@ zopen_append_to_zoslib_env() {
  cat <<EOF
 ASCII_TERMINFO|set|PROJECT_ROOT/../../ncurses/ncurses/share/terminfo/
 EOF
+}
+
+zopen_get_version()
+{
+  ./screen --version | cut -f3 -d' '
 }
