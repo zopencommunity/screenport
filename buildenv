@@ -1,5 +1,5 @@
 # bump: screen-version /SCREEN_VERSION="(.*)"/ https://ftp.gnu.org/gnu/screen/|re:/href="screen-([\d.]+).tar.gz"/$1/|semver:*
-SCREEN_VERSION="4.9.1"
+SCREEN_VERSION="5.0.0"
 
 export ZOPEN_BUILD_LINE="STABLE"
 export ZOPEN_STABLE_URL="http://ftp.gnu.org/gnu/screen/screen-${SCREEN_VERSION}.tar.gz"
