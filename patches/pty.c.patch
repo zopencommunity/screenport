@@ -1,5 +1,5 @@
 diff --git a/pty.c b/pty.c
-index 6791fd5..2072842 100644
+index 6791fd5..47c7cb8 100644
 --- a/pty.c
 +++ b/pty.c
 @@ -44,8 +44,12 @@
@@ -15,7 +15,7 @@ index 6791fd5..2072842 100644
  
  #if defined(sun) && defined(LOCKPTY) && !defined(TIOCEXCL)
  # include <sys/ttold.h>
-@@ -67,11 +71,22 @@
+@@ -67,17 +71,32 @@
   * if no PTYRANGE[01] is in the config file, we pick a default
   */
  #ifndef PTYRANGE0
@@ -38,7 +38,17 @@ index 6791fd5..2072842 100644
  
  /* SVR4 pseudo ttys don't seem to work with SCO-5 */
  #ifdef M_UNIX
-@@ -91,6 +106,9 @@ static char TtyProto[] = "/dev/pty/ttyXY";
+ # undef HAVE_SVR4_PTYS
+ #endif
+ 
++#ifdef __MVS__
++#include <pty.h>
++#endif
++
+ extern int eff_uid;
+ 
+ /* used for opening a new pty-pair: */
+@@ -91,6 +110,9 @@ static char TtyProto[] = "/dev/pty/ttyXY";
  #  ifdef M_UNIX
  static char PtyProto[] = "/dev/ptypXY";
  static char TtyProto[] = "/dev/ttypXY";
@@ -48,7 +58,7 @@ index 6791fd5..2072842 100644
  #  else
  static char PtyProto[] = "/dev/ptyXY";
  static char TtyProto[] = "/dev/ttyXY";
-@@ -352,7 +370,7 @@ int
+@@ -352,7 +374,7 @@ int
  OpenPTY(ttyn)
  char **ttyn;
  {
@@ -57,7 +67,7 @@ index 6791fd5..2072842 100644
    register int f;
  
    debug("OpenPTY: Using BSD style ptys.\n");
-@@ -365,12 +383,15 @@ char **ttyn;
+@@ -365,12 +387,15 @@ char **ttyn;
    for (l = PTYRANGE0; (*p = *l) != '\0'; l++)
      {
        for (d = PTYRANGE1; (p[1] = *d) != '\0'; d++)
@@ -73,7 +83,7 @@ index 6791fd5..2072842 100644
  	  if (eff_uid && access(TtyName, R_OK | W_OK))
  	    {
  	      close(f);
-@@ -396,6 +417,7 @@ char **ttyn;
+@@ -396,6 +421,7 @@ char **ttyn;
  	  return f;
  	}
      }
