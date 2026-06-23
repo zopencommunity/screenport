@@ -1,3 +1,5 @@
+[![CodeQL](https://github.com/zopencommunity/screenport/actions/workflows/codeql.yml/badge.svg)](https://github.com/zopencommunity/screenport/actions/workflows/codeql.yml)
+
 [![Automatic version updates](https://github.com/ZOSOpenTools/screenport/actions/workflows/bump.yml/badge.svg)](https://github.com/ZOSOpenTools/screenport/actions/workflows/bump.yml)
 
 # Screen
